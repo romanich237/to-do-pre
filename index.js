@@ -1,108 +1,100 @@
 let items = [
-  "Сделать проектную работу",
-  "Полить цветы",
-  "Пройти туториал по Реакту",
-  "Сделать фронт для своего проекта",
-  "Прогуляться по улице в солнечный день",
-  "Помыть посуду",
+	"Сделать проектную работу",
+	"Полить цветы",
+	"Пройти туториал по Реакту",
+	"Сделать фронт для своего проекта",
+	"Прогуляться по улице в солнечный день",
+	"Помыть посуду",
 ];
 
 const listElement = document.querySelector(".to-do__list");
 const formElement = document.querySelector(".to-do__form");
 const inputElement = document.querySelector(".to-do__input");
-const templateElement = document.getElementById("to-do__item-template");
+const TASKS_STORAGE_KEY = "to-do-tasks";
 
 function loadTasks() {
-  const savedTasks = localStorage.getItem("tasks");
+	const savedTasks = localStorage.getItem(TASKS_STORAGE_KEY);
+	if (!savedTasks) {
+		return items;
+	}
 
-  if (savedTasks !== null) {
-    return JSON.parse(savedTasks);
-  }
+	try {
+		const parsedTasks = JSON.parse(savedTasks);
+		if (Array.isArray(parsedTasks)) {
+			return parsedTasks;
+		}
+	} catch (error) {
+		console.error("Не удалось прочитать задачи из localStorage", error);
+	}
 
-  return items;
-}
-
-function saveTasks(tasks) {
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-}
-
-function getTasksFromDOM() {
-  const itemsNamesElements = document.querySelectorAll(".to-do__item-text");
-  const tasks = [];
-
-  itemsNamesElements.forEach(function (itemNameElement) {
-    tasks.push(itemNameElement.textContent);
-  });
-
-  return tasks;
+	return items;
 }
 
 function createItem(item) {
-  const clone = templateElement.content
-    .querySelector(".to-do__item")
-    .cloneNode(true);
-  const textElement = clone.querySelector(".to-do__item-text");
-  const deleteButton = clone.querySelector(".to-do__item-button_type_delete");
-  const duplicateButton = clone.querySelector(".to-do__item-button_type_duplicate");
-  const editButton = clone.querySelector(".to-do__item-button_type_edit");
+	const template = document.getElementById("to-do__item-template");
+	const clone = template.content.querySelector(".to-do__item").cloneNode(true);
+	const textElement = clone.querySelector(".to-do__item-text");
+	const deleteButton = clone.querySelector(".to-do__item-button_type_delete");
+	const duplicateButton = clone.querySelector(".to-do__item-button_type_duplicate");
+	const editButton = clone.querySelector(".to-do__item-button_type_edit");
+	textElement.textContent = item;
 
-  textElement.textContent = item;
+	deleteButton.addEventListener("click", () => {
+		clone.remove();
+		items = getTasksFromDOM();
+		saveTasks(items);
+	});
 
-  deleteButton.addEventListener("click", function () {
-    clone.remove();
+	duplicateButton.addEventListener("click", () => {
+		const itemName = textElement.textContent;
+		const newItem = createItem(itemName);
+		listElement.prepend(newItem);
+		items = getTasksFromDOM();
+		saveTasks(items);
+	});
 
-    const currentTasks = getTasksFromDOM();
-    saveTasks(currentTasks);
-  });
+	editButton.addEventListener("click", () => {
+		textElement.setAttribute("contenteditable", "true");
+		textElement.focus();
+	});
 
-  duplicateButton.addEventListener("click", function () {
-    const itemName = textElement.textContent;
-    const newItem = createItem(itemName);
+	textElement.addEventListener("blur", () => {
+		textElement.setAttribute("contenteditable", "false");
+		items = getTasksFromDOM();
+		saveTasks(items);
+	});
 
-    listElement.prepend(newItem);
-
-    const currentTasks = getTasksFromDOM();
-    saveTasks(currentTasks);
-  });
-
-  editButton.addEventListener("click", function () {
-    textElement.setAttribute("contenteditable", "true");
-    textElement.focus();
-  });
-
-  textElement.addEventListener("blur", function () {
-    textElement.setAttribute("contenteditable", "false");
-
-    const currentTasks = getTasksFromDOM();
-    saveTasks(currentTasks);
-  });
-
-  return clone;
+	return clone;
 }
 
-function handleFormSubmit(evt) {
-  evt.preventDefault();
-
-  const itemName = inputElement.value.trim();
-
-  if (itemName === "") {
-    return;
-  }
-
-  const newItem = createItem(itemName);
-  listElement.prepend(newItem);
-
-  items = getTasksFromDOM();
-  saveTasks(items);
-
-  inputElement.value = "";
+function getTasksFromDOM() {
+	return Array.from(listElement.querySelectorAll(".to-do__item-text")).map(
+		(taskElement) => taskElement.textContent
+	);
 }
 
-formElement.addEventListener("submit", handleFormSubmit);
+function saveTasks(tasks) {
+	localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+}
+
+formElement.addEventListener("submit", (event) => {
+	event.preventDefault();
+	const newTask = inputElement.value.trim();
+
+	if (!newTask) {
+		return;
+	}
+
+	const taskElement = createItem(newTask);
+	listElement.prepend(taskElement);
+	items = getTasksFromDOM();
+	saveTasks(items);
+	inputElement.value = "";
+});
 
 items = loadTasks();
-
-items.forEach(function (item) {
-  const taskElement = createItem(item);
-  listElement.append(taskElement);
+items.forEach((item) => {
+	const taskElement = createItem(item);
+	listElement.append(taskElement);
 });
+
