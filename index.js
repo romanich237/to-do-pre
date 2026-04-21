@@ -24,14 +24,14 @@ function loadTasks() {
 			return parsedTasks;
 		}
 	} catch (error) {
-		console.error("Не удалось прочитать задачи из localStorage", error);
+		return items;
 	}
 
 	return items;
 }
 
 function createItem(item) {
-	const template = document.getElementById("to-do__item-template");
+	const template = document.querySelector("#to-do__item-template");
 	const clone = template.content.querySelector(".to-do__item").cloneNode(true);
 	const textElement = clone.querySelector(".to-do__item-text");
 	const deleteButton = clone.querySelector(".to-do__item-button_type_delete");
@@ -68,9 +68,14 @@ function createItem(item) {
 }
 
 function getTasksFromDOM() {
-	return Array.from(listElement.querySelectorAll(".to-do__item-text")).map(
-		(taskElement) => taskElement.textContent
-	);
+	const itemsNamesElements = listElement.querySelectorAll(".to-do__item-text");
+	const tasks = [];
+
+	itemsNamesElements.forEach((taskElement) => {
+		tasks.push(taskElement.textContent);
+	});
+
+	return tasks;
 }
 
 function saveTasks(tasks) {
